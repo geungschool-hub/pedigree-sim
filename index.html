@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가계도 분석하기</title>
+<style>
+  :root {
+    --red:    #C0392B;  --red-bg:    #FDECEA;
+    --blue:   #1255A0;  --blue-bg:   #E3F0FB;
+    --yellow: #B7791F;  --yellow-bg: #FDF3D7;
+    --green:  #2A7A38;  --green-bg:  #E6F4E9;
+    --pink:   #C2185B;  --pink-bg:   #FCE4EC;
+    --amber:  #E67E22;  --amber-bg:  #FDE9C9;
+    --ink: #1A1A1A; --sub: #555; --line: #CCC;
+    --aff1: #AEDCF5; --aff1-line: #4A90C4;   /* 자료1 미맹(파랑) */
+    --aff2: #F8A9C4; --aff2-line: #D4487E;   /* 자료2 색맹(분홍) */
+    --aff3: #D8C6F0; --aff3-line: #7B4FB5;   /* 도전(보라) */
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    font-size:17px; color:var(--ink); background:#F0F2F5;
+    padding:12px; line-height:1.6;
+  }
+  .wrap { max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+
+  header.top {
+    background:#fff; border-radius:14px; padding:16px 20px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  header.top h1 { font-size:22px; color:var(--blue); }
+  header.top .sub { font-size:15px; color:var(--sub); }
+  header.top .tags { margin-top:4px; }
+  header.top .tag {
+    display:inline-block; font-size:13px; color:var(--blue); background:var(--blue-bg);
+    border-radius:10px; padding:2px 10px; margin-right:4px;
+  }
+  #progress {
+    background:var(--blue); color:#fff; font-weight:700; font-size:16px;
+    padding:8px 16px; border-radius:20px; white-space:nowrap;
+  }
+
+  .card {
+    background:#fff; border-radius:14px; padding:16px 18px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .card h2 {
+    font-size:19px; margin-bottom:10px; padding:6px 12px; border-radius:6px;
+    border-left:5px solid var(--blue); background:var(--blue-bg);
+  }
+  .card h2.green { border-left-color:var(--green); background:var(--green-bg); }
+  .card h2.pink  { border-left-color:var(--pink);  background:var(--pink-bg); }
+  .card h2.amber { border-left-color:var(--amber); background:var(--amber-bg); }
+
+  /* ── 가계도 기호 ── */
+  .sym-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .sym {
+    border:1px solid var(--line); border-radius:10px; background:#FAFAFA;
+    padding:10px 8px; text-align:center;
+  }
+  .sym svg { display:block; margin:0 auto 4px; }
+  .sym .sname { font-size:15px; }
+
+  /* ── 가계도 무대 ── */
+  .ped-outer { overflow-x:auto; }
+  .ped-stage {
+    position:relative; margin:0 auto;
+    /* width/height는 JS가 설정 */
+  }
+  .ped-line { position:absolute; background:#8A8F98; }
+  .ped-genlab {
+    position:absolute; font-size:16px; font-weight:700; color:#666;
+    border-bottom:2px dotted #AAA; padding:0 4px 0 0; line-height:1.3;
+  }
+  .member { position:absolute; text-align:center; cursor:pointer; touch-action:manipulation;
+    width:64px; margin-left:-32px; }
+  .member .shape {
+    width:40px; height:40px; margin:0 auto;
+    border:2.5px solid #9AA0A8; background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    transition:box-shadow .15s, transform .15s;
+  }
+  .member.F .shape { border-radius:50%; }
+  .member.M .shape { border-radius:6px; }
+  .member .num { font-size:16px; font-weight:700; margin-top:1px; }
+  .member .geno {
+    display:inline-block; min-height:22px; font-size:15px; font-weight:700; line-height:1.3;
+    border-radius:8px; padding:0 6px; background:#EEF3F8; color:var(--blue);
+    visibility:hidden; white-space:nowrap;
+  }
+  .member .geno.show { visibility:visible; }
+  .member .geno.ok    { background:var(--green-bg); color:var(--green); }
+  .member .geno.bad   { background:var(--red-bg);   color:var(--red); text-decoration:line-through; }
+  .member.tapin .shape { transform:scale(.9); }
+  .member.hl .shape   { box-shadow:0 0 0 5px rgba(42,122,56,.45); }
+  .member.dim { opacity:.4; }
+  .member.shake { animation:shake .4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+  sup { font-size:.72em; }
+
+  .ped-arrows { position:absolute; left:0; top:0; pointer-events:none; }
+  .ped-arrows path { stroke:var(--green); stroke-width:4; fill:none;
+    stroke-dasharray:8 6; animation:dashmove 1.2s linear infinite; }
+  .ped-arrows polygon { fill:var(--green); }
+  @keyframes dashmove { to { stroke-dashoffset:-28; } }
+
+  /* ── 판단 문답 ── */
+  .quiz { border:1px solid var(--line); border-radius:10px; background:#FAFAFA; padding:12px 14px; margin-top:12px; }
+  .quiz .qhead { font-weight:700; margin-bottom:8px; }
+  .quiz .qhead .qno {
+    display:inline-block; background:var(--blue); color:#fff; border-radius:50%;
+    width:26px; height:26px; line-height:26px; text-align:center; font-size:15px; margin-right:6px;
+  }
+  .choice-row { display:flex; gap:10px; flex-wrap:wrap; }
+  .choice {
+    border:2px solid var(--blue); background:#fff; color:var(--blue);
+    font-family:inherit; font-size:17px; font-weight:700;
+    border-radius:10px; padding:10px 20px; min-height:48px; cursor:pointer;
+  }
+  .choice.sel   { background:var(--blue); color:#fff; }
+  .choice.good  { border-color:var(--green); background:var(--green); color:#fff; }
+  .choice.no    { border-color:#BBB; color:#999; background:#F4F4F4; }
+  .fb { margin-top:10px; border-radius:8px; padding:9px 12px; font-size:16px; display:none; }
+  .fb.show { display:block; }
+  .fb.good { border-left:4px solid var(--green); background:var(--green-bg); }
+  .fb.warn { border-left:4px solid var(--amber); background:var(--amber-bg); }
+  .fb.info { border-left:4px solid var(--blue);  background:var(--blue-bg); }
+
+  .task-banner {
+    display:none; margin-top:10px; border:2px dashed var(--green); border-radius:10px;
+    background:var(--green-bg); padding:9px 12px; font-size:16px; font-weight:700; color:var(--green);
+  }
+  .task-banner.show { display:block; animation:pulsebg 1.6s ease infinite; }
+  @keyframes pulsebg { 0%,100%{background:var(--green-bg);} 50%{background:#D5EDDA;} }
+
+  /* ── 버튼 ── */
+  .btn {
+    display:inline-block; border:none; border-radius:10px; cursor:pointer;
+    font-family:inherit; font-size:17px; font-weight:700;
+    padding:12px 22px; min-height:48px; min-width:48px;
+    background:var(--blue); color:#fff;
+  }
+  .btn:active { filter:brightness(.9); }
+  .btn.green { background:var(--green); }
+  .btn.pink  { background:var(--pink); }
+  .btn.gray  { background:#666; }
+  .btn.ghost { background:#fff; color:var(--blue); border:2px solid var(--blue); }
+  .btn:disabled { background:#BBB; cursor:default; border-color:#BBB; color:#fff; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; justify-content:center; }
+
+  /* ── 유전자형 선택 시트 ── */
+  #sheetBack {
+    position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:40;
+  }
+  #sheet {
+    position:fixed; left:0; right:0; bottom:0; z-index:50; display:none;
+    background:#fff; border-radius:18px 18px 0 0; box-shadow:0 -4px 20px rgba(0,0,0,.25);
+    padding:16px 18px calc(18px + env(safe-area-inset-bottom)); max-width:920px; margin:0 auto;
+  }
+  #sheet .who { font-size:18px; font-weight:700; margin-bottom:4px; }
+  #sheet .hint { font-size:15px; color:var(--sub); margin-bottom:10px; }
+  #sheet .opts { display:flex; gap:10px; flex-wrap:wrap; }
+  #sheet .opts button {
+    border:2px solid var(--blue); background:#fff; color:var(--blue);
+    font-family:inherit; font-size:18px; font-weight:700;
+    border-radius:10px; padding:10px 16px; min-height:50px; min-width:88px; cursor:pointer;
+  }
+  #sheet .opts button.cur { background:var(--blue); color:#fff; }
+  #sheet .close { margin-top:12px; }
+
+  /* ── 채점 결과 ── */
+  .score-line { font-size:17px; font-weight:700; margin-top:10px; display:none; }
+  .score-line.show { display:block; }
+
+  /* ── 경로 추적 ── */
+  #pathTrail { font-size:20px; font-weight:800; letter-spacing:1px; color:var(--green);
+    min-height:30px; margin-top:8px; }
+
+  /* ── 정리하기 ── */
+  .q { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:#FAFAFA; }
+  .q .qt { font-weight:700; margin-bottom:6px; }
+  .q textarea {
+    width:100%; min-height:64px; font-family:inherit; font-size:16px;
+    border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical; background:#fff;
+  }
+  .q .ans { display:none; margin-top:8px; border-left:4px solid var(--green); background:var(--green-bg); padding:8px 12px; border-radius:6px; font-size:16px; }
+  .q .btn { margin-top:8px; font-size:16px; padding:9px 16px; }
+  table.gtable { border-collapse:collapse; margin-top:6px; font-size:15px; }
+  table.gtable th, table.gtable td { border:1px solid var(--line); padding:4px 8px; text-align:center; vertical-align:middle; }
+  table.gtable th { background:#EEF3F8; }
+
+  .note { font-size:15px; color:var(--sub); margin-top:8px; }
+  footer { text-align:center; padding:6px 0 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>🌳 가계도 분석하기</h1>
+      <div class="sub">가계도를 분석하여 유전형질의 유전적 특성을 추론해 보자 (교과서 23쪽 해보기)</div>
+      <div class="tags"><span class="tag">과학적 사고</span><span class="tag">자료 해석</span><span class="tag">과학적 추론</span></div>
+    </div>
+    <div id="progress">진행 0 / 4</div>
+  </header>
+
+  <!-- ── ① 가계도 기호 ── -->
+  <section class="card">
+    <h2>① 가계도 기호 익히기</h2>
+    <div class="sym-grid">
+      <div class="sym">
+        <svg width="90" height="44" viewBox="0 0 90 44">
+          <rect x="8" y="4" width="32" height="32" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <circle cx="68" cy="20" r="16" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+        </svg>
+        <div class="sname">남자 · 여자</div>
+      </div>
+      <div class="sym">
+        <svg width="110" height="44" viewBox="0 0 110 44">
+          <rect x="12" y="6" width="30" height="30" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <line x1="42" y1="21" x2="70" y2="21" stroke="#8A8F98" stroke-width="2.5"/>
+          <circle cx="84" cy="21" r="15" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+        </svg>
+        <div class="sname">결혼</div>
+      </div>
+      <div class="sym">
+        <svg width="110" height="58" viewBox="0 0 110 58">
+          <rect x="16" y="2" width="24" height="24" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <line x1="40" y1="14" x2="66" y2="14" stroke="#8A8F98" stroke-width="2.5"/>
+          <circle cx="78" cy="14" r="12" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <line x1="53" y1="14" x2="53" y2="32" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="34" y1="32" x2="72" y2="32" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="34" y1="32" x2="34" y2="40" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="72" y1="32" x2="72" y2="40" stroke="#8A8F98" stroke-width="2.5"/>
+          <rect x="24" y="40" width="18" height="16" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <circle cx="72" cy="48" r="9" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+        </svg>
+        <div class="sname">자손</div>
+      </div>
+      <div class="sym">
+        <svg width="130" height="58" viewBox="0 0 130 58">
+          <line x1="30" y1="14" x2="30" y2="24" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="16" y1="24" x2="44" y2="24" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="16" y1="24" x2="16" y2="36" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="44" y1="24" x2="44" y2="36" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="16" y1="30" x2="44" y2="30" stroke="#8A8F98" stroke-width="2"/>
+          <rect x="8" y="36" width="16" height="16" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <rect x="36" y="36" width="16" height="16" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <line x1="100" y1="14" x2="100" y2="20" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="88" y1="36" x2="100" y2="20" stroke="#8A8F98" stroke-width="2.5"/>
+          <line x1="112" y1="36" x2="100" y2="20" stroke="#8A8F98" stroke-width="2.5"/>
+          <rect x="80" y="36" width="16" height="16" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+          <circle cx="112" cy="44" r="8" fill="#fff" stroke="#9AA0A8" stroke-width="2.5"/>
+        </svg>
+        <div class="sname">일란성쌍둥이 · 이란성쌍둥이</div>
+      </div>
+      <div class="sym">
+        <svg width="90" height="44" viewBox="0 0 90 44">
+          <rect x="8" y="4" width="32" height="32" fill="#F8A9C4" stroke="#D4487E" stroke-width="2.5"/>
+          <circle cx="68" cy="20" r="16" fill="#AEDCF5" stroke="#4A90C4" stroke-width="2.5"/>
+        </svg>
+        <div class="sname">대상 형질은 색으로 표시</div>
+      </div>
+    </div>
+    <p class="note">세대는 로마자(Ⅰ, Ⅱ, Ⅲ …)로, 구성원은 번호로 나타낸다.</p>
+  </section>
+
+  <!-- ── ② 자료 1 ── -->
+  <section class="card">
+    <h2>② [자료 1] PTC 미맹 가계도</h2>
+    <p>어느 집안의 PTC 미맹 유전 가계도이다. PTC 미맹은 PTC(브로콜리나 양배추에 들어 있는 쓴맛 물질)의
+      쓴맛을 느끼지 못하는 유전형질이다.
+      <span style="color:var(--sub); font-size:15px;">(<span style="display:inline-block;width:14px;height:14px;background:var(--aff1);border:2px solid var(--aff1-line);vertical-align:-2px;"></span> = PTC 미맹)</span></p>
+    <div class="ped-outer"><div class="ped-stage" id="stage1"></div></div>
+    <div class="task-banner" id="task1"></div>
+
+    <div class="quiz">
+      <div class="qhead"><span class="qno">1</span>PTC 미맹은 우성일까, 열성일까?</div>
+      <div class="choice-row">
+        <button class="choice" id="q1_dom" onclick="answerQ1('dom')">우성</button>
+        <button class="choice" id="q1_rec" onclick="answerQ1('rec')">열성</button>
+      </div>
+      <div class="fb" id="fb_q1"></div>
+    </div>
+
+    <div class="quiz" id="quiz2" style="display:none;">
+      <div class="qhead"><span class="qno">2</span>PTC 미맹 유전자는 상염색체와 성염색체(X) 중 어디에 있을까?</div>
+      <div class="choice-row">
+        <button class="choice" id="q2_auto" onclick="answerQ2('auto')">상염색체</button>
+        <button class="choice" id="q2_x" onclick="answerQ2('x')">성염색체(X)</button>
+      </div>
+      <div class="fb" id="fb_q2"></div>
+    </div>
+  </section>
+
+  <!-- ── ③ 자료 2 ── -->
+  <section class="card">
+    <h2 class="pink">③ [자료 2] 적록색맹 가계도 — 유전자형 써 넣기</h2>
+    <p>어느 집안의 적록색맹 유전 가계도이다. <b>적록색맹을 결정하는 유전자는 X염색체에 있다.</b>
+      구성원을 탭하여 유전자형을 골라 넣자
+      — 정상 대립유전자는 <b>X<sup>R</sup></b>, 적록색맹 대립유전자는 <b>X′</b>로 표시한다.
+      <span style="color:var(--sub); font-size:15px;">(<span style="display:inline-block;width:14px;height:14px;background:var(--aff2);border:2px solid var(--aff2-line);vertical-align:-2px;"></span> = 적록색맹)</span></p>
+    <div class="ped-outer"><div class="ped-stage" id="stage2"></div></div>
+    <div class="note">💡 근거를 갖고 확정할 수 없는 사람에게는 「확정 불가」를 고르자.</div>
+    <div class="btnrow">
+      <button class="btn pink" id="btnGrade" onclick="gradeP2()">채점하기 (<span id="genoCount">0</span>/14 입력)</button>
+    </div>
+    <div class="score-line" id="scoreLine"></div>
+
+    <div class="quiz" id="quizPath" style="display:none;">
+      <div class="qhead"><span class="qno">4</span>Ⅲ-9의 적록색맹 대립유전자(X′)는 누구에게서 왔을까?
+        <b>전달이 시작된 조상부터 순서대로</b> 가계도에서 탭해 보자.</div>
+      <div id="pathTrail">경로: </div>
+      <div class="fb" id="fb_path"></div>
+    </div>
+  </section>
+
+  <!-- ── ④ 정리하기 ── -->
+  <section class="card" id="secWrapup">
+    <h2 class="amber">④ 정리하기</h2>
+
+    <div class="q">
+      <div class="qt">1. [자료 1]에서 PTC 미맹은 우성인지, 열성인지 판단하고 그 근거를 설명해 보자.</div>
+      <textarea id="ta1" placeholder="내 생각을 먼저 적어 보자." oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans"><b>열성</b>이다. 부모 Ⅰ-1·Ⅰ-2는 모두 정상인데 자녀 Ⅱ-6·Ⅱ-7이 미맹이다
+      (Ⅱ-8·Ⅱ-9 정상 부부의 딸 Ⅲ-11도 미맹).
+      부모에게 표현되지 않던 형질이 자녀에게 나타났으므로, 부모는 미맹 대립유전자를 하나씩 갖고 있었지만
+      우성인 정상 대립유전자에 가려 표현되지 않은 것이다. 따라서 미맹은 열성이다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">2. [자료 1]에서 PTC의 쓴맛을 느끼게 하는 유전자는 상염색체와 성염색체 중 어느 염색체에 있는지 판단하고, 그 근거를 설명해 보자.</div>
+      <textarea id="ta2" placeholder="미맹인 딸들의 아버지를 살펴보자." oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans"><b>상염색체</b>에 있다. 만약 미맹 유전자가 X염색체에 있다면(X 열성 유전),
+      미맹인 딸은 아버지에게서 미맹 대립유전자가 있는 X염색체를 반드시 물려받아야 하므로 아버지도 미맹이어야 한다.
+      그런데 미맹인 딸 Ⅱ-6의 아버지 Ⅰ-1과 Ⅲ-11의 아버지 Ⅱ-8은 모두 정상이므로 모순이다.
+      따라서 이 유전자는 상염색체에 있다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">3. [자료 2]에서 가족 구성원의 유전자형을 가계도에 모두 써 보자. (위 ③에서 직접 입력하고 채점해 보자)</div>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans">
+        <table class="gtable">
+          <tr><th>구성원</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+          <tr><th>유전자형</th><td>X<sup>R</sup>Y</td><td>X<sup>R</sup>X′</td><td>X<sup>R</sup>Y</td><td>X<sup>R</sup>X′</td><td>X′Y</td><td>X<sup>R</sup>X<b>?</b></td><td>X<sup>R</sup>Y</td></tr>
+          <tr><th>구성원</th><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
+          <tr><th>유전자형</th><td>X′X′</td><td>X′Y</td><td>X<sup>R</sup>Y</td><td>X<sup>R</sup>Y</td><td>X<sup>R</sup>X′</td><td>X<sup>R</sup>X′</td><td>X′Y</td></tr>
+        </table>
+        <p style="margin-top:6px;">Ⅱ-2와 Ⅱ-4는 정상이지만 색맹인 아들(5, 9)에게 X′를 물려주었으므로 보인자(X<sup>R</sup>X′)로 확정된다.
+        Ⅲ-12는 색맹인 아버지(5)에게서 반드시 X′를 받으므로 보인자, Ⅲ-13은 색맹인 어머니(8)에게서 X′를 받으므로 보인자다.
+        <b>Ⅱ-6만은</b> 자녀(11·12)에게서 근거를 찾을 수 없어 X<sup>R</sup>X<sup>R</sup>인지 X<sup>R</sup>X′인지 <b>확정할 수 없다</b>.</p>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="qt">4. [자료 2]에서 9의 적록색맹 대립유전자가 전달된 경로를 번호로 써 보자.</div>
+      <textarea id="ta4" placeholder="예) ○ → ○ → 9" oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans"><b>2 → 4 → 9</b>.
+      9의 X′는 어머니 Ⅱ-4에게서 왔다(아들의 X염색체는 항상 어머니에게서 온다).
+      Ⅱ-4의 X′는 아버지 Ⅰ-1이 정상(X<sup>R</sup>Y)이어서 X<sup>R</sup>만 줄 수 있으므로 어머니 Ⅰ-2에게서 온 것이다.
+      Ⅰ-2가 X′를 가진 보인자라는 것은 색맹인 아들 Ⅱ-5로부터 확인된다.</div>
+    </div>
+  </section>
+
+  <!-- ── 💡 도전 ── -->
+  <section class="card">
+    <h2 class="green">💡 도전 — 이 형질은 우성일까?</h2>
+    <p>어떤 유전형질 (가)에 대한 가계도이다. 지금까지와 <b>결정적 근거가 다른</b> 가계도!
+      <span style="color:var(--sub); font-size:15px;">(<span style="display:inline-block;width:14px;height:14px;background:var(--aff3);border:2px solid var(--aff3-line);vertical-align:-2px;"></span> = 형질 (가) 발현)</span></p>
+    <div class="ped-outer"><div class="ped-stage" id="stage3"></div></div>
+    <div class="task-banner" id="task3"></div>
+
+    <div class="quiz">
+      <div class="qhead"><span class="qno">A</span>형질 (가)는 우성일까, 열성일까?</div>
+      <div class="choice-row">
+        <button class="choice" id="q3_dom" onclick="answerQ3('dom')">우성</button>
+        <button class="choice" id="q3_rec" onclick="answerQ3('rec')">열성</button>
+      </div>
+      <div class="fb" id="fb_q3"></div>
+    </div>
+
+    <div class="quiz" id="quiz4" style="display:none;">
+      <div class="qhead"><span class="qno">B</span>형질 (가)의 유전자는 상염색체와 성염색체(X) 중 어디에 있을까?</div>
+      <div class="choice-row">
+        <button class="choice" id="q4_auto" onclick="answerQ4('auto')">상염색체</button>
+        <button class="choice" id="q4_x" onclick="answerQ4('x')">성염색체(X)</button>
+      </div>
+      <div class="fb" id="fb_q4"></div>
+    </div>
+  </section>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+  </footer>
+
+</div>
+
+<!-- ── 유전자형 선택 시트 ── -->
+<div id="sheetBack" onclick="closeSheet()"></div>
+<div id="sheet">
+  <div class="who" id="sheetWho"></div>
+  <div class="hint" id="sheetHint"></div>
+  <div class="opts" id="sheetOpts"></div>
+  <div class="close"><button class="btn gray" onclick="closeSheet()">닫기</button></div>
+</div>
+
+<script>
+'use strict';
+/* ════════════════ 데이터 ════════════════
+   좌표계: 설계 그리드(px). 렌더 시 그대로 사용, 좁은 화면은 가로 스크롤. */
+
+var P1 = {
+  w:640, h:400, aff:'aff1',
+  gens: [ {lab:'Ⅰ', y:50}, {lab:'Ⅱ', y:180}, {lab:'Ⅲ', y:310} ],
+  members: [
+    {id:1, sex:'M', aff:false, x:170, y:50},
+    {id:2, sex:'F', aff:false, x:270, y:50},
+    {id:3, sex:'M', aff:true,  x:400, y:50},
+    {id:4, sex:'F', aff:false, x:500, y:50},
+    {id:5, sex:'F', aff:false, x:65,  y:180},
+    {id:6, sex:'F', aff:true,  x:150, y:180},
+    {id:7, sex:'M', aff:true,  x:235, y:180},
+    {id:8, sex:'M', aff:false, x:320, y:180},
+    {id:9, sex:'F', aff:false, x:420, y:180},
+    {id:10,sex:'F', aff:true,  x:520, y:180},
+    {id:11,sex:'F', aff:true,  x:370, y:310},
+    {id:12,sex:'F', aff:false, x:460, y:310}
+  ],
+  couples: [[1,2],[3,4],[8,9]],
+  sibs: [
+    {p:[1,2], c:[5,6,7,8], barY:130},
+    {p:[3,4], c:[9,10],    barY:130},
+    {p:[8,9], c:[11,12],   barY:260}
+  ]
+};
+
+var P2 = {
+  w:700, h:400, aff:'aff2',
+  gens: [ {lab:'Ⅰ', y:50}, {lab:'Ⅱ', y:180}, {lab:'Ⅲ', y:310} ],
+  members: [
+    {id:1, sex:'M', aff:false, x:300, y:50},
+    {id:2, sex:'F', aff:false, x:400, y:50},
+    {id:3, sex:'M', aff:false, x:90,  y:180},
+    {id:4, sex:'F', aff:false, x:190, y:180},
+    {id:5, sex:'M', aff:true,  x:300, y:180},
+    {id:6, sex:'F', aff:false, x:400, y:180},
+    {id:7, sex:'M', aff:false, x:510, y:180},
+    {id:8, sex:'F', aff:true,  x:610, y:180},
+    {id:9, sex:'M', aff:true,  x:90,  y:310},
+    {id:10,sex:'M', aff:false, x:190, y:310},
+    {id:11,sex:'M', aff:false, x:300, y:310},
+    {id:12,sex:'F', aff:false, x:400, y:310},
+    {id:13,sex:'F', aff:false, x:510, y:310},
+    {id:14,sex:'M', aff:true,  x:610, y:310}
+  ],
+  couples: [[1,2],[3,4],[5,6],[7,8]],
+  sibs: [
+    {p:[1,2], c:[4,5,7],  barY:130},
+    {p:[3,4], c:[9,10],   barY:260},
+    {p:[5,6], c:[11,12],  barY:260},
+    {p:[7,8], c:[13,14],  barY:260}
+  ]
+};
+
+var P3 = {
+  w:520, h:270, aff:'aff3',
+  gens: [ {lab:'Ⅰ', y:50}, {lab:'Ⅱ', y:180} ],
+  members: [
+    {id:1, sex:'M', aff:true,  x:210, y:50},
+    {id:2, sex:'F', aff:true,  x:310, y:50},
+    {id:3, sex:'F', aff:false, x:210, y:180},
+    {id:4, sex:'M', aff:true,  x:310, y:180}
+  ],
+  couples: [[1,2]],
+  sibs: [ {p:[1,2], c:[3,4], barY:130} ]
+};
+
+/* ── 정답 데이터 ── */
+// 자료2 유전자형 (UNK = 확정 불가)
+var GENO_KEY = {
+  1:'RY', 2:'Rr', 3:'RY', 4:'Rr', 5:'rY', 6:'UNK', 7:'RY',
+  8:'rr', 9:'rY', 10:'RY', 11:'RY', 12:'Rr', 13:'Rr', 14:'rY'
+};
+var GENO_LABEL = {
+  'RR':'X<sup>R</sup>X<sup>R</sup>', 'Rr':'X<sup>R</sup>X′', 'rr':'X′X′',
+  'UNK':'X<sup>R</sup>X<b>?</b>', 'RY':'X<sup>R</sup>Y', 'rY':'X′Y'
+};
+var GENO_HINT = {
+  2:'색맹인 아들 5의 X염색체는 어머니에게서 왔다.',
+  4:'색맹인 아들 9의 X염색체는 어머니에게서 왔다.',
+  6:'자녀 11·12 어느 쪽에서도 X′의 근거를 찾을 수 없다.',
+  12:'아버지 5가 색맹이다 — 딸은 아버지의 X를 반드시 받는다.',
+  13:'어머니 8이 색맹(X′X′)이다.',
+  1:'정상 남자의 유전자형은 하나뿐이다.', 3:'정상 남자의 유전자형은 하나뿐이다.',
+  7:'정상 남자의 유전자형은 하나뿐이다.', 10:'정상 남자의 유전자형은 하나뿐이다.',
+  11:'정상 남자의 유전자형은 하나뿐이다.',
+  5:'색맹 남자의 유전자형은 하나뿐이다.', 9:'색맹 남자의 유전자형은 하나뿐이다.',
+  14:'색맹 남자의 유전자형은 하나뿐이다.',
+  8:'색맹 여자는 X′를 두 개 가진다.'
+};
+// 문항1: 「정상 부모의 미맹 자녀」 (탭 정답)
+var Q1_EVIDENCE = [6,7,11];
+// 문항2: 「아버지가 정상인 미맹 딸」 (탭 정답)
+var Q2_EVIDENCE = [6,11];
+// 경로: 2 → 4 → 9
+var PATH_KEY = [2,4,9];
+// 도전: 근거 = 형질×형질 부모의 정상 딸 3
+var Q3_EVIDENCE = [3];
+var Q4_EVIDENCE = [3];
+
+/* ── 상태 ── */
+var state = null;
+function freshState(){
+  return {
+    q1:null, q1ev:false, q2:null, q2ev:false,     // 자료1
+    geno:{},                                       // 자료2 입력 {id:code}
+    graded:false, allCorrect:false,
+    path:[], pathDone:false,
+    q3:null, q3ev:false, q4:null, q4ev:false,      // 도전
+    ta:{}
+  };
+}
+
+var LS_KEY = 'pedigree_sim_v1';
+function saveState(){
+  try {
+    var ta = {};
+    ['ta1','ta2','ta4'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) ta[id] = el.value;
+    });
+    state.ta = ta;
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+function loadState(){
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (raw) { var s = JSON.parse(raw); if (s && typeof s === 'object') return s; }
+  } catch(e) {}
+  return null;
+}
+
+/* ════════════════ 순수 로직 (테스트 대상) ════════════════ */
+function gradeGeno(key, answers){
+  var wrong = [], correct = [], missing = [];
+  Object.keys(key).forEach(function(id){
+    var a = answers[id];
+    if (a === undefined) { missing.push(+id); }
+    else if (a === key[id]) { correct.push(+id); }
+    else { wrong.push(+id); }
+  });
+  return { correct:correct, wrong:wrong, missing:missing };
+}
+// 경로 탭 검증: 순서대로만 인정
+function pathStep(expected, progress, tapId){
+  var idx = progress.length;
+  if (idx >= expected.length) return 'done';
+  if (tapId === expected[idx]) return (idx === expected.length-1) ? 'finish' : 'ok';
+  return 'wrong';
+}
+function memberById(data, id){
+  for (var i=0;i<data.members.length;i++) if (data.members[i].id===id) return data.members[i];
+  return null;
+}
+
+/* ════════════════ 가계도 렌더 ════════════════ */
+var SH = 40;   // 도형 한 변/지름
+function renderPedigree(stageId, data, onTap){
+  var st = document.getElementById(stageId);
+  st.style.width = data.w + 'px';
+  st.style.height = data.h + 'px';
+  st.innerHTML = '';
+
+  function line(x, y, w, h){
+    var d = document.createElement('div');
+    d.className = 'ped-line';
+    d.style.left = x+'px'; d.style.top = y+'px';
+    d.style.width = Math.max(w,2.5)+'px'; d.style.height = Math.max(h,2.5)+'px';
+    st.appendChild(d);
+  }
+  // 세대 라벨
+  data.gens.forEach(function(g){
+    var d = document.createElement('div');
+    d.className = 'ped-genlab';
+    d.style.left = '6px'; d.style.top = (g.y - 12) + 'px';
+    d.textContent = g.lab;
+    st.appendChild(d);
+  });
+  // 결혼선
+  data.couples.forEach(function(cp){
+    var a = memberById(data, cp[0]), b = memberById(data, cp[1]);
+    var x1 = Math.min(a.x,b.x) + SH/2, x2 = Math.max(a.x,b.x) - SH/2;
+    line(x1, a.y - 1, x2 - x1, 2.5);
+  });
+  // 자손선
+  data.sibs.forEach(function(sb){
+    var pa = memberById(data, sb.p[0]), pb = memberById(data, sb.p[1]);
+    var midX = (pa.x + pb.x) / 2;
+    line(midX - 1, pa.y, 2.5, sb.barY - pa.y);                 // 부모 중점 → 형제 막대
+    var xs = sb.c.map(function(cid){ return memberById(data,cid).x; });
+    var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
+    var barL = Math.min(minX, midX), barR = Math.max(maxX, midX);
+    line(barL - 1, sb.barY, barR - barL + 2, 2.5);             // 형제 막대
+    sb.c.forEach(function(cid){
+      var c = memberById(data, cid);
+      line(c.x - 1, sb.barY, 2.5, c.y - SH/2 - sb.barY);       // 막대 → 자녀
+    });
+  });
+  // 구성원
+  data.members.forEach(function(m){
+    var d = document.createElement('div');
+    d.className = 'member ' + m.sex;
+    d.id = stageId + '_m' + m.id;
+    d.style.left = m.x + 'px';
+    d.style.top = (m.y - SH/2) + 'px';
+    var fill = m.aff ? ('var(--' + data.aff + ')') : '#fff';
+    var edge = m.aff ? ('var(--' + data.aff + '-line)') : '#9AA0A8';
+    d.innerHTML = '<div class="shape" style="background:' + fill + '; border-color:' + edge + ';"></div>' +
+                  '<div class="num">' + m.id + '</div>' +
+                  '<div class="geno" id="' + stageId + '_g' + m.id + '">&nbsp;</div>';
+    if (onTap) d.onclick = function(){ onTap(m.id); };
+    st.appendChild(d);
+  });
+  // 경로 화살표용 SVG 오버레이
+  var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('class','ped-arrows');
+  svg.setAttribute('width', data.w); svg.setAttribute('height', data.h);
+  svg.setAttribute('viewBox', '0 0 ' + data.w + ' ' + data.h);
+  svg.id = stageId + '_arrows';
+  st.appendChild(svg);
+}
+
+function setGeno(stageId, id, html, cls){
+  var g = document.getElementById(stageId + '_g' + id);
+  if (!g) return;
+  g.innerHTML = html || '&nbsp;';
+  g.className = 'geno' + (html ? ' show' : '') + (cls ? ' ' + cls : '');
+}
+function flashShake(stageId, id){
+  var el = document.getElementById(stageId + '_m' + id);
+  if (!el) return;
+  el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+}
+function setHL(stageId, ids, on){
+  ids.forEach(function(id){
+    var el = document.getElementById(stageId + '_m' + id);
+    if (el) el.classList.toggle('hl', !!on);
+  });
+}
+
+/* ════════════════ 진행 배지 ════════════════ */
+function stepDone(){
+  var n = 0;
+  if (state.q1 === 'rec' && state.q1ev) n++;
+  if (state.q2 === 'auto' && state.q2ev) n++;
+  if (state.allCorrect) n++;
+  if (state.pathDone) n++;
+  return n;
+}
+function updateProgress(){
+  document.getElementById('progress').textContent = '진행 ' + stepDone() + ' / 4';
+}
+
+/* ════════════════ 자료1: 문항 1·2 ════════════════ */
+var evMode = null;   // 'q1' | 'q2' | null — 자료1 탭 모드
+
+function showFb(id, cls, html){
+  var el = document.getElementById(id);
+  el.className = 'fb show ' + cls;
+  el.innerHTML = html;
+}
+function setBanner(id, text){
+  var el = document.getElementById(id);
+  if (text) { el.textContent = text; el.classList.add('show'); }
+  else { el.classList.remove('show'); }
+}
+
+function answerQ1(pick){
+  if (state.q1 === 'rec' && state.q1ev) return;   // 이미 완료
+  state.q1 = pick;
+  document.getElementById('q1_dom').className = 'choice' + (pick==='dom' ? ' sel' : '');
+  document.getElementById('q1_rec').className = 'choice' + (pick==='rec' ? ' sel' : '');
+  if (pick === 'dom') {
+    showFb('fb_q1','warn','🤔 미맹이 우성이라면, 미맹인 자녀의 부모 중 <b>적어도 한 명은 반드시 미맹</b>이어야 한다. 미맹인 6·7의 부모(1·2)를 다시 보자!');
+    setBanner('task1','');
+    evMode = null;
+  } else {
+    showFb('fb_q1','info','좋아! 그렇게 판단한 <b>결정적 근거</b>를 가계도에서 직접 찾아 보자.');
+    setBanner('task1','👆 부모는 모두 정상인데 자신은 미맹인 사람을 가계도에서 탭!');
+    evMode = 'q1';
+  }
+  saveState(); updateProgress();
+}
+function completeQ1(){
+  state.q1ev = true; evMode = null;
+  document.getElementById('q1_dom').className = 'choice no';
+  document.getElementById('q1_rec').className = 'choice good';
+  setHL('stage1', [1,2,6,7], true);
+  setBanner('task1','');
+  showFb('fb_q1','good','✅ <b>미맹은 열성!</b> 정상인 부모 1·2 사이에서 미맹인 자녀 6·7이 태어났다. 부모가 감추고 있던 미맹 대립유전자가 자녀에서 쌍을 이루며 나타난 것 — 부모에게 없던 형질이 자녀에 나타나면 그 형질은 <b>열성</b>이다. (정상 부부 8·9의 딸 11도 같은 근거)');
+  document.getElementById('quiz2').style.display = 'block';
+  saveState(); updateProgress();
+}
+function answerQ2(pick){
+  if (state.q2 === 'auto' && state.q2ev) return;
+  state.q2 = pick;
+  document.getElementById('q2_auto').className = 'choice' + (pick==='auto' ? ' sel' : '');
+  document.getElementById('q2_x').className = 'choice' + (pick==='x' ? ' sel' : '');
+  if (pick === 'x') {
+    showFb('fb_q2','warn','🤔 X염색체에 있는 열성 형질이라면, 미맹인 <b>딸</b>은 아버지에게서 X′를 받아야 하므로 <b>아버지도 반드시 미맹</b>이어야 한다. 미맹인 딸들(6, 11)의 아버지를 확인해 보자!');
+    setBanner('task1','');
+    evMode = null;
+  } else {
+    showFb('fb_q2','info','좋아! 그 <b>근거가 되는 사람</b>을 가계도에서 찾아 보자.');
+    setBanner('task1','👆 미맹인 딸인데 아버지는 정상인 사람을 탭!');
+    evMode = 'q2';
+  }
+  saveState(); updateProgress();
+}
+function completeQ2(){
+  state.q2ev = true; evMode = null;
+  document.getElementById('q2_auto').className = 'choice good';
+  document.getElementById('q2_x').className = 'choice no';
+  setHL('stage1', [1,2,6,7], false);
+  setHL('stage1', [1,6,8,11], true);
+  setBanner('task1','');
+  showFb('fb_q2','good','✅ <b>상염색체!</b> 미맹 유전자가 X염색체에 있다면 미맹인 딸 6의 아버지 1, 딸 11의 아버지 8도 미맹이어야 하는데 둘 다 정상이라 모순이다. 그러므로 미맹 유전자는 <b>상염색체</b>에 있다.');
+  saveState(); updateProgress();
+}
+function tapP1(id){
+  var m = memberById(P1, id);
+  if (!evMode) return;
+  if (evMode === 'q1') {
+    if (Q1_EVIDENCE.indexOf(id) >= 0) { completeQ1(); return; }
+    flashShake('stage1', id);
+    if (id === 10) showFb('fb_q1','warn','10도 미맹이지만 아버지 3이 미맹이라, 우성이라고 해도 설명이 되는 가족이야. <b>부모가 모두 정상</b>인 미맹 자녀를 찾아 보자.');
+    else if (id === 3) showFb('fb_q1','warn','3은 미맹이지만 부모가 가계도에 없어 근거를 찾을 수 없어.');
+    else if (!m.aff) showFb('fb_q1','warn','이 사람은 미맹이 아니야. <b>미맹인 사람</b> 중에서 부모가 모두 정상인 사람을 찾아 보자.');
+  } else if (evMode === 'q2') {
+    if (Q2_EVIDENCE.indexOf(id) >= 0) { completeQ2(); return; }
+    flashShake('stage1', id);
+    if (id === 10) showFb('fb_q2','warn','10의 아버지 3은 미맹이야. 그래서 10은 X염색체에 있다고 해도 모순이 없는 사람 — 근거가 되지 못해. <b>아버지가 정상</b>인 미맹 딸을 찾자.');
+    else if (id === 7) showFb('fb_q2','warn','7은 <b>아들</b>이야. 아들의 미맹은 X염색체에 있어도 어머니에게서 X′ 하나만 받으면 나타나므로 모순이 생기지 않아. 미맹인 <b>딸</b>을 찾아 보자.');
+    else if (!m.aff) showFb('fb_q2','warn','이 사람은 미맹이 아니야. 미맹인 <b>딸</b> 중에서 아버지가 정상인 사람을 찾자.');
+    else showFb('fb_q2','warn','다시 — 미맹인 <b>딸</b>이면서 <b>아버지가 정상</b>인 사람!');
+  }
+}
+
+/* ════════════════ 자료2: 유전자형 + 경로 ════════════════ */
+var sheetTarget = null;
+var pathMode = false;
+
+function tapP2(id){
+  if (pathMode) { tapPath(id); return; }
+  openSheet(id);
+}
+function openSheet(id){
+  sheetTarget = id;
+  var m = memberById(P2, id);
+  var gen = m.y === 50 ? 'Ⅰ' : (m.y === 180 ? 'Ⅱ' : 'Ⅲ');
+  document.getElementById('sheetWho').innerHTML =
+    gen + '-' + id + ' · ' + (m.aff ? '<span style="color:var(--pink);">적록색맹</span>' : '정상') + ' ' + (m.sex==='M' ? '남자' : '여자');
+  var hint = '';
+  if (state.graded && state.geno[id] !== undefined && state.geno[id] !== GENO_KEY[id]) {
+    hint = '💡 ' + (GENO_HINT[id] || '');
+  } else {
+    hint = m.sex==='M' ? '남자는 X염색체가 하나 — 표현형이 곧 유전자형!' : '여자는 X염색체가 두 개. 부모·자녀에게서 근거를 찾자.';
+  }
+  document.getElementById('sheetHint').textContent = hint;
+  var opts = m.sex==='M' ? ['RY','rY'] : ['RR','Rr','rr','UNK'];
+  var box = document.getElementById('sheetOpts');
+  box.innerHTML = '';
+  opts.forEach(function(code){
+    var b = document.createElement('button');
+    b.innerHTML = GENO_LABEL[code] + (code==='UNK' ? '<span style="font-size:13px; display:block; font-weight:400;">확정 불가</span>' : '');
+    if (state.geno[id] === code) b.className = 'cur';
+    b.onclick = function(){ chooseGeno(id, code); };
+    box.appendChild(b);
+  });
+  document.getElementById('sheetBack').style.display = 'block';
+  document.getElementById('sheet').style.display = 'block';
+}
+function closeSheet(){
+  sheetTarget = null;
+  document.getElementById('sheetBack').style.display = 'none';
+  document.getElementById('sheet').style.display = 'none';
+}
+function chooseGeno(id, code){
+  state.geno[id] = code;
+  if (state.graded) {   // 채점 후 수정 → 그 사람만 중립 표시로
+    setGeno('stage2', id, GENO_LABEL[code], '');
+  } else {
+    setGeno('stage2', id, GENO_LABEL[code], '');
+  }
+  closeSheet();
+  refreshGenoCount();
+  saveState();
+}
+function refreshGenoCount(){
+  document.getElementById('genoCount').textContent = Object.keys(state.geno).length;
+}
+function gradeP2(){
+  var n = Object.keys(state.geno).length;
+  if (n < 14) {
+    showScore('warn', '아직 입력하지 않은 사람이 ' + (14-n) + '명 있어 — 모두 입력한 뒤 채점하자!');
+    return;
+  }
+  var r = gradeGeno(GENO_KEY, state.geno);
+  state.graded = true;
+  r.correct.forEach(function(id){ setGeno('stage2', id, GENO_LABEL[state.geno[id]], 'ok'); });
+  r.wrong.forEach(function(id){ setGeno('stage2', id, GENO_LABEL[state.geno[id]], 'bad'); });
+  if (r.wrong.length === 0) {
+    state.allCorrect = true;
+    showScore('good', '🎉 14명 전원 정답! 특히 <b>6</b>은 근거가 없어 확정 불가라는 것까지 정확했어.');
+    startPathQuiz();
+  } else {
+    state.allCorrect = false;
+    showScore('warn', '맞음 ' + r.correct.length + ' / 14. 빨간 표시를 탭하면 힌트가 나와 — 고친 뒤 다시 채점하자!');
+  }
+  saveState(); updateProgress();
+}
+function showScore(cls, html){
+  var el = document.getElementById('scoreLine');
+  el.className = 'score-line show';
+  el.style.color = cls==='good' ? 'var(--green)' : 'var(--amber)';
+  el.innerHTML = html;
+}
+function startPathQuiz(){
+  document.getElementById('quizPath').style.display = 'block';
+  if (!state.pathDone) {
+    pathMode = true;
+    state.path = [];
+    renderTrail();
+  } else {
+    renderTrail(); drawPathArrows();
+  }
+}
+function renderTrail(){
+  var t = state.path.map(String).join(' → ');
+  document.getElementById('pathTrail').innerHTML = '경로: ' + (t || '<span style="color:#999;">(조상부터 탭)</span>') +
+    (state.pathDone ? '' : (state.path.length ? ' → ?' : ''));
+}
+function tapPath(id){
+  if (state.pathDone) return;
+  var res = pathStep(PATH_KEY, state.path, id);
+  if (res === 'ok' || res === 'finish') {
+    state.path.push(id);
+    renderTrail();
+    setHL('stage2', [id], true);
+    if (res === 'finish') {
+      state.pathDone = true; pathMode = false;
+      drawPathArrows();
+      showFb('fb_path','good','✅ <b>2 → 4 → 9</b>! ' +
+        '9의 X′는 어머니 4에게서(아들의 X는 항상 어머니에게서), 4의 X′는 어머니 2에게서 왔다 ' +
+        '(아버지 1은 정상이라 X<sup>R</sup>만 줄 수 있다). 2가 보인자라는 근거는 색맹인 아들 5!');
+    } else {
+      showFb('fb_path','info','좋아, 다음은 누구? X′가 <b>내려간 길</b>을 따라가자.');
+    }
+    saveState(); updateProgress();
+    return;
+  }
+  flashShake('stage2', id);
+  if (id === 9 && state.path.length === 0)
+    showFb('fb_path','warn','9는 경로의 <b>도착점</b>! 전달이 시작된 조상부터 순서대로 탭하자.');
+  else if (id === 1)
+    showFb('fb_path','warn','1은 정상 남자(X<sup>R</sup>Y) — X′를 갖고 있지 않아 딸에게 X<sup>R</sup>만 줄 수 있어.');
+  else if (id === 5)
+    showFb('fb_path','warn','5도 어머니 2에게서 X′를 받았지만, 5는 9의 삼촌 — 9에게 아무것도 물려주지 않았어. (5는 2가 보인자라는 <b>근거</b>!)');
+  else if (id === 3)
+    showFb('fb_path','warn','아버지 3은 정상(X<sup>R</sup>Y) — 아들 9에게는 X염색체가 아니라 <b>Y염색체</b>를 물려주었어.');
+  else
+    showFb('fb_path','warn','그 사람은 9의 X′가 지나온 길이 아니야. <b>가장 먼저 X′를 갖고 있던 조상</b>부터 차례로!');
+}
+function drawPathArrows(){
+  var svg = document.getElementById('stage2_arrows');
+  if (!svg) return;
+  svg.innerHTML = '';
+  var pts = PATH_KEY.map(function(id){ var m = memberById(P2, id); return {x:m.x, y:m.y}; });
+  for (var i=0;i<pts.length-1;i++){
+    var a = pts[i], b = pts[i+1];
+    var dx = b.x-a.x, dy = b.y-a.y, len = Math.sqrt(dx*dx+dy*dy);
+    var sx = a.x + dx/len*30, sy = a.y + dy/len*30;
+    var ex = b.x - dx/len*34, ey = b.y - dy/len*34;
+    var p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d','M'+sx+' '+sy+' L'+ex+' '+ey);
+    svg.appendChild(p);
+    var ang = Math.atan2(ey-sy, ex-sx);
+    var a1x = ex - 12*Math.cos(ang-0.42), a1y = ey - 12*Math.sin(ang-0.42);
+    var a2x = ex - 12*Math.cos(ang+0.42), a2y = ey - 12*Math.sin(ang+0.42);
+    var tri = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    tri.setAttribute('points', ex+','+ey+' '+a1x+','+a1y+' '+a2x+','+a2y);
+    svg.appendChild(tri);
+  }
+  PATH_KEY.forEach(function(id){ setHL('stage2',[id],true); });
+}
+
+/* ════════════════ 도전 ════════════════ */
+var evMode3 = null;
+function answerQ3(pick){
+  if (state.q3 === 'dom' && state.q3ev) return;
+  state.q3 = pick;
+  document.getElementById('q3_dom').className = 'choice' + (pick==='dom' ? ' sel' : '');
+  document.getElementById('q3_rec').className = 'choice' + (pick==='rec' ? ' sel' : '');
+  if (pick === 'rec') {
+    showFb('fb_q3','warn','🤔 (가)가 열성이라면 형질이 나타난 1·2는 둘 다 열성 대립유전자만 가진 <b>순종(동형접합성)</b>이어야 해. 그렇다면 자녀는 <b>전부</b> 형질이 나타나야 하는데… 3을 보자!');
+    setBanner('task3',''); evMode3 = null;
+  } else {
+    showFb('fb_q3','info','좋아! 그 <b>결정적 근거가 되는 사람</b>을 탭해 보자.');
+    setBanner('task3','👆 (가)가 열성이라면 있을 수 없는 사람을 탭!');
+    evMode3 = 'q3';
+  }
+  saveState();
+}
+function completeQ3(){
+  state.q3ev = true; evMode3 = null;
+  document.getElementById('q3_dom').className = 'choice good';
+  document.getElementById('q3_rec').className = 'choice no';
+  setHL('stage3',[1,2,3],true);
+  setBanner('task3','');
+  showFb('fb_q3','good','✅ <b>(가)는 우성!</b> 만약 열성이라면 형질이 나타난 부모 1·2는 모두 열성 순종이므로 자녀 전원에게 형질이 나타나야 한다. 그런데 딸 3이 정상 — 모순! <b>형질인 부모 사이에서 정상 자녀</b>가 나오면 그 형질은 우성이다. (자료 1과 판단 방향이 반대라는 점에 주목)');
+  document.getElementById('quiz4').style.display = 'block';
+  saveState();
+}
+function answerQ4(pick){
+  if (state.q4 === 'auto' && state.q4ev) return;
+  state.q4 = pick;
+  document.getElementById('q4_auto').className = 'choice' + (pick==='auto' ? ' sel' : '');
+  document.getElementById('q4_x').className = 'choice' + (pick==='x' ? ' sel' : '');
+  if (pick === 'x') {
+    showFb('fb_q4','warn','🤔 (가)가 X염색체에 있는 우성이라면, 형질인 아버지 1의 X염색체는 <b>딸에게 반드시</b> 전달돼. 그럼 딸은 모두 형질이 나타나야 하는데… 딸 3은?');
+    setBanner('task3',''); evMode3 = null;
+  } else {
+    showFb('fb_q4','info','좋아! 역시 <b>근거가 되는 사람</b>을 탭해 보자.');
+    setBanner('task3','👆 (가)가 X염색체 우성이라면 있을 수 없는 사람을 탭!');
+    evMode3 = 'q4';
+  }
+  saveState();
+}
+function completeQ4(){
+  state.q4ev = true; evMode3 = null;
+  document.getElementById('q4_auto').className = 'choice good';
+  document.getElementById('q4_x').className = 'choice no';
+  setHL('stage3',[1,3],true);
+  setBanner('task3','');
+  showFb('fb_q4','good','✅ <b>상염색체!</b> (가)가 X염색체 우성이라면 형질인 아버지 1의 딸은 아버지의 X와 함께 형질 대립유전자를 반드시 받아 전원 형질이 나타나야 한다. 그런데 딸 3이 정상이므로 모순 — (가) 유전자는 상염색체에 있다.');
+  saveState();
+}
+function tapP3(id){
+  if (!evMode3) return;
+  var target = evMode3 === 'q3' ? Q3_EVIDENCE : Q4_EVIDENCE;
+  if (target.indexOf(id) >= 0) {
+    if (evMode3 === 'q3') completeQ3(); else completeQ4();
+    return;
+  }
+  flashShake('stage3', id);
+  var fbId = evMode3 === 'q3' ? 'fb_q3' : 'fb_q4';
+  if (id === 4) showFb(fbId,'warn','4는 형질이 나타난 아들 — 우성이든 열성이든 설명이 되는 사람이야. <b>열성이라면 나올 수 없는</b> 사람을 찾자.');
+  else showFb(fbId,'warn','1·2는 형질이 나타난 부모야. 이 부부의 <b>자녀</b> 중에서 모순인 사람을 찾아 보자.');
+}
+
+/* ════════════════ 정리하기 · 리셋 ════════════════ */
+function toggleAns(btn){
+  var ans = btn.parentElement.querySelector('.ans');
+  var open = ans.style.display === 'block';
+  ans.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '모범답안 보기' : '모범답안 닫기';
+}
+function resetAll(){
+  if (!confirm('입력·채점 기록을 모두 지우고 처음부터 다시 할까요?')) return;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  location.reload();
+}
+
+/* ════════════════ 복원 ════════════════ */
+function restoreUI(){
+  // 자료1
+  if (state.q1 === 'rec' && state.q1ev) { completeQ1cheap(); }
+  else if (state.q1) { var p = state.q1; state.q1 = null; answerQ1(p); }
+  if (state.q2 === 'auto' && state.q2ev) { answerQ2cheap(); }
+  else if (state.q2 && state.q1ev) { var p2 = state.q2; state.q2 = null; answerQ2(p2); }
+  // 자료2
+  Object.keys(state.geno).forEach(function(id){ setGeno('stage2', +id, GENO_LABEL[state.geno[id]], ''); });
+  refreshGenoCount();
+  if (state.graded) {
+    var r = gradeGeno(GENO_KEY, state.geno);
+    r.correct.forEach(function(id){ setGeno('stage2', id, GENO_LABEL[state.geno[id]], 'ok'); });
+    r.wrong.forEach(function(id){ setGeno('stage2', id, GENO_LABEL[state.geno[id]], 'bad'); });
+    if (state.allCorrect) {
+      showScore('good','🎉 14명 전원 정답!');
+      startPathQuiz();
+      if (state.pathDone) {
+        showFb('fb_path','good','✅ <b>2 → 4 → 9</b> 완료!');
+      } else {
+        state.path.forEach(function(id){ setHL('stage2',[id],true); });
+        renderTrail();
+      }
+    }
+  }
+  // 도전
+  if (state.q3 === 'dom' && state.q3ev) { answerQ3cheap(); }
+  else if (state.q3) { var p3 = state.q3; state.q3 = null; answerQ3(p3); }
+  if (state.q4 === 'auto' && state.q4ev) { answerQ4cheap(); }
+  else if (state.q4 && state.q3ev) { var p4 = state.q4; state.q4 = null; answerQ4(p4); }
+  // 서술 답
+  Object.keys(state.ta || {}).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = state.ta[id];
+  });
+  updateProgress();
+}
+/* 복원 전용: 완료 상태를 애니메이션 없이 재현 */
+function completeQ1cheap(){
+  document.getElementById('q1_dom').className='choice no';
+  document.getElementById('q1_rec').className='choice good';
+  showFb('fb_q1','good','✅ <b>미맹은 열성</b> — 정상 부모 1·2에게서 미맹 자녀 6·7. (완료)');
+  setBanner('task1',''); evMode=null;
+  document.getElementById('quiz2').style.display='block';
+}
+function answerQ2cheap(){
+  document.getElementById('quiz2').style.display='block';
+  document.getElementById('q2_auto').className='choice good';
+  document.getElementById('q2_x').className='choice no';
+  showFb('fb_q2','good','✅ <b>상염색체</b> — 정상 아버지(1, 8)의 미맹 딸(6, 11). (완료)');
+  setHL('stage1',[1,6,8,11],true); evMode=null;
+}
+function answerQ3cheap(){
+  document.getElementById('q3_dom').className='choice good';
+  document.getElementById('q3_rec').className='choice no';
+  showFb('fb_q3','good','✅ <b>(가)는 우성</b> — 형질인 부모(1·2)의 정상 딸 3. (완료)');
+  setHL('stage3',[1,2,3],true); evMode3=null;
+  document.getElementById('quiz4').style.display='block';
+}
+function answerQ4cheap(){
+  document.getElementById('quiz4').style.display='block';
+  document.getElementById('q4_auto').className='choice good';
+  document.getElementById('q4_x').className='choice no';
+  showFb('fb_q4','good','✅ <b>상염색체</b> — X 우성이라면 형질 아버지 1의 딸 3이 정상일 수 없다. (완료)');
+  setHL('stage3',[1,3],true); evMode3=null;
+}
+
+/* ════════════════ 시작 ════════════════ */
+function init(){
+  renderPedigree('stage1', P1, tapP1);
+  renderPedigree('stage2', P2, tapP2);
+  renderPedigree('stage3', P3, tapP3);
+  var saved = loadState();
+  state = saved ? Object.assign(freshState(), saved) : freshState();
+  restoreUI();
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('DOMContentLoaded', init);
+}
+</script>
+</body>
+</html>
