@@ -120,6 +120,12 @@
   .member.F .shape { border-radius:50%; }
   .member.M .shape { border-radius:6px; }
   .member .num { font-size:16px; font-weight:700; margin-top:1px; }
+  .member .shape .bt { font-size:13px; font-weight:800; color:#1A1A1A; letter-spacing:-.5px; line-height:1; }
+  .info-line {
+    border:1px solid var(--line); border-left:4px solid var(--pink); border-radius:8px;
+    background:#FAFAFA; padding:8px 12px; margin-top:8px; font-size:15.5px; color:var(--sub);
+  }
+  .info-line b { color:var(--ink); }
   .member .geno {
     display:inline-block; min-height:22px; font-size:15px; font-weight:700; line-height:1.3;
     border-radius:8px; padding:0 6px; background:#EEF3F8; color:var(--blue);
@@ -344,7 +350,7 @@
     width:100%; min-height:64px; font-family:inherit; font-size:16px;
     border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical; background:#fff;
   }
-  .q .ans { display:none; margin-top:8px; border-left:4px solid var(--green); background:var(--green-bg); padding:8px 12px; border-radius:6px; font-size:16px; }
+  .q .ans { display:none; margin-top:8px; border-left:4px solid var(--green); background:var(--green-bg); padding:8px 12px; border-radius:6px; font-size:16px; overflow-x:auto; }
   .q .btn { margin-top:8px; font-size:16px; padding:9px 16px; }
   table.gtable { border-collapse:collapse; margin-top:6px; font-size:15px; }
   table.gtable th, table.gtable td { border:1px solid var(--line); padding:4px 8px; text-align:center; vertical-align:middle; }
@@ -604,6 +610,64 @@
     </div>
   </section>
 
+  <!-- ── ⑤ 연습 (혈액형 + 적록색맹) ── -->
+  <section class="card">
+    <h2 class="pink">⑤ 연습 — 혈액형과 적록색맹
+      <span class="tag done" id="practiceBadge" style="display:none;">연습 완료 ✓</span></h2>
+    <p>어느 집안의 <b>ABO식 혈액형</b>과 <b>적록색맹</b>을 함께 나타낸 가계도이다.
+      기호 안의 글자는 그 사람의 <b>혈액형</b>이고, 색칠된 기호는 <b>적록색맹</b>이다.
+      <span style="color:var(--sub); font-size:15px;">(<span style="display:inline-block;width:14px;height:14px;background:var(--aff2);border:2px solid var(--aff2-line);vertical-align:-2px;"></span> = 적록색맹)</span></p>
+    <div class="info-line">
+      혈액형 대립유전자 <b>I<sup>A</sup>·I<sup>B</sup>·i</b>는 <b>상염색체</b>에 있고, I<sup>A</sup>와 I<sup>B</sup>는 i에 대하여 우성이며 서로 사이에는 우열이 없다.
+      적록색맹 대립유전자는 <b>X염색체</b>에 있는 열성이며, 정상 대립유전자는 X<sup>R</sup>, 적록색맹 대립유전자는 X′로 표시한다.
+    </div>
+
+    <div class="ped-box" id="pedbox_stage4">
+      <div class="ped-tools">
+        <button class="ped-btn" type="button" aria-label="축소" onclick="pedZoom('stage4',-1)">－</button>
+        <span class="ped-pct" id="pedpct_stage4">100%</span>
+        <button class="ped-btn" type="button" aria-label="확대" onclick="pedZoom('stage4',1)">＋</button>
+        <button class="ped-btn wide" type="button" onclick="pedFit('stage4')">화면 맞춤</button>
+        <button class="ped-btn wide" type="button" id="pednum_stage4" onclick="pedToggleAssist('stage4')">🔢 번호 선택</button>
+        <span class="spacer"></span>
+        <button class="ped-btn wide" type="button" id="pedfs_stage4" onclick="pedToggleFull('stage4')">⤢ 크게 보기</button>
+      </div>
+      <div class="ped-outer" id="pedouter_stage4">
+        <div class="ped-view" id="pedview_stage4"><div class="ped-stage" id="stage4"></div></div>
+      </div>
+      <div class="ped-hint" id="pedhint_stage4">도형이 작아 선택하기 어려우면 <b>🔢 번호 선택</b> 단추 또는 <b>⤢ 크게 보기</b>를 이용한다.</div>
+      <div class="ped-assist" id="pedassist_stage4"></div>
+      <div class="ped-console">
+        <div class="ped-task"><div class="task-banner" id="task4"></div></div>
+        <div class="ped-who empty" id="who4">구성원을 선택하면 그 구성원의 혈액형과 가족 관계가 표시된다.</div>
+      </div>
+    </div>
+
+    <div class="quiz" id="quiz_q5">
+      <div class="qhead"><span class="qno">1</span>적록색맹 — 보인자는 무엇을 근거로 확정하는가?</div>
+      <div class="qintro" id="qintro_q5"></div>
+      <div class="qsteps" id="qbox_q5"></div>
+    </div>
+
+    <div class="quiz" id="quiz_q6" style="display:none;">
+      <div class="qhead"><span class="qno">2</span>ABO식 혈액형 — Ⅰ세대 부모의 유전자형은 무엇인가?</div>
+      <div class="qintro" id="qintro_q6"></div>
+      <div class="qsteps" id="qbox_q6"></div>
+    </div>
+
+    <div class="quiz" id="quiz_q7" style="display:none;">
+      <div class="qhead"><span class="qno">3</span>두 형질을 함께 — 다음 아이의 확률은 얼마인가?</div>
+      <div class="qintro" id="qintro_q7"></div>
+      <div class="qsteps" id="qbox_q7"></div>
+    </div>
+
+    <div class="q" style="margin-top:12px;">
+      <div class="qt">연습 정리 — 구성원 7명의 유전자형</div>
+      <button class="btn ghost" id="ansPBtn" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans" id="ansTableP"></div>
+    </div>
+  </section>
+
   <footer>
     <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
   </footer>
@@ -690,6 +754,36 @@ var P3 = {
   couples: [[1,2]],
   sibs: [ {p:[1,2], c:[3,4], barY:130} ]
 };
+
+/* ── ⑤ 연습: 혈액형(상염색체 복대립) + 적록색맹(X염색체 열성) ──
+   기호 안 글자 = 혈액형 표현형 · 색칠 = 적록색맹. 7명 전원이 두 형질 모두 확정된다. */
+var P4 = {
+  w:430, h:400, aff:'aff2',
+  gens: [ {lab:'Ⅰ', y:50}, {lab:'Ⅱ', y:180}, {lab:'Ⅲ', y:310} ],
+  members: [
+    {id:1, sex:'M', aff:false, bt:'A',  x:180, y:50},
+    {id:2, sex:'F', aff:false, bt:'B',  x:280, y:50},
+    {id:3, sex:'M', aff:true,  bt:'O',  x:130, y:180},
+    {id:4, sex:'F', aff:false, bt:'AB', x:230, y:180},
+    {id:5, sex:'M', aff:true,  bt:'O',  x:330, y:180},
+    {id:6, sex:'F', aff:false, bt:'B',  x:230, y:310},
+    {id:7, sex:'M', aff:true,  bt:'A',  x:330, y:310}
+  ],
+  couples: [[1,2],[4,5]],
+  sibs: [
+    {p:[1,2], c:[3,4], barY:130},
+    {p:[4,5], c:[6,7], barY:260}
+  ]
+};
+
+var P4_BT_KEY = { 1:'Ai', 2:'Bi', 3:'ii', 4:'AB', 5:'ii', 6:'Bi', 7:'Ai' };
+var P4_CB_KEY = { 1:'RY', 2:'Rr', 3:'rY', 4:'Rr', 5:'rY', 6:'Rr', 7:'rY' };
+var BT_LABEL  = { 'Ai':'I<sup>A</sup>i', 'Bi':'I<sup>B</sup>i', 'ii':'ii', 'AB':'I<sup>A</sup>I<sup>B</sup>' };
+
+var Q5_OBS       = [3,5,7];   // 적록색맹인 사람 전원(모두 남자)
+var Q5_SON_EVID  = [4];       // 아들을 근거로 보인자가 확정되는 여자
+var Q5_DAD_EVID  = [5];       // 딸 6이 보인자라는 근거가 되는 아버지
+var Q6_EVIDENCE  = [3];       // O형이라서 Ⅰ세대 부모를 확정해 주는 자녀
 
 /* ── 정답 데이터 ── */
 // 자료2 유전자형 (UNK = 확정 불가)
@@ -1005,9 +1099,170 @@ var QDEF = {
       { kind:'path',
         prompt:'전달이 시작된 조상부터 순서대로 가계도에서 선택하시오.' }
     ]
+  },
+
+  /* ════ ⑤ 연습 — 혈액형(상염색체 복대립) + 적록색맹(X염색체 열성) ════
+     자료1·자료2에서 확정한 규칙을 새 가계도에 적용하는 단계이다. 우열·위치는 이미 주어져 있다. */
+  q5: {
+    stage:'stage4', box:'qbox_q5', card:'quiz_q5', intro:'qintro_q5',
+    labels:['① 자료 관찰','② 근거 확인','③ 같은 근거 적용','④ 다른 경로'],
+    intro_t:'적록색맹은 X염색체에 있는 열성 형질이다. 우열과 위치는 이미 주어져 있으므로, ' +
+            '이 문항에서는 <b>보인자를 확정하는 근거</b>가 어디에 있는지만 판단한다.',
+    steps:[
+      { kind:'tap', all:true, ids:Q5_OBS, unit:'적록색맹', banner:'적록색맹인 사람을 모두 선택하시오 (3명)',
+        prompt:'가계도에서 <b>적록색맹인 사람</b>(색칠된 사람)을 모두 선택하시오. 모두 <b>3명</b>이다.',
+        ok:'적록색맹인 사람은 3·5·7이며 <b>모두 남자</b>이다. 남자는 X염색체가 하나뿐이므로 세 사람의 유전자형은 ' +
+           'X′Y로 곧바로 확정된다. 판단이 필요한 대상은 <b>정상인 여자</b>이다.',
+        wrong:function(id){
+          var m = memberById(P4, id);
+          if (m && m.aff) return '이미 선택한 구성원이다. 다른 구성원을 확인한다.';
+          return '색칠되지 않았으므로 적록색맹이 아니다. 이 단계에서는 해석하지 말고 <b>표현형만</b> 확인한다.';
+        } },
+      { kind:'pick',
+        prompt:'Ⅰ-2는 정상이지만 보인자(X<sup>R</sup>X′)로 확정된다. 그 근거는?',
+        wide:true,
+        choices:[
+          { t:'Ⅰ-2의 <b>아들 3</b>이 적록색맹이다', ok:true },
+          { t:'Ⅰ-2의 <b>남편 1</b>이 정상이다',
+            fb:'옳지 않다. 남편이 정상이라는 사실은 남편의 X염색체에 대한 정보일 뿐, Ⅰ-2가 X′를 가졌는지에 대해서는 아무것도 알려 주지 않는다.' },
+          { t:'Ⅰ-2의 <b>딸 4</b>가 정상이다',
+            fb:'옳지 않다. 딸이 정상이라는 사실만으로는 그 딸이 X′를 가졌는지 알 수 없으므로, 어머니의 유전자형도 확정되지 않는다.' }
+        ],
+        ok:'옳다. 아들의 X염색체는 반드시 어머니에게서 온다. 아들 3이 X′Y이므로 그 X′는 Ⅰ-2의 것이며, ' +
+           'Ⅰ-2는 정상이므로 나머지 하나는 X<sup>R</sup>이다. 따라서 Ⅰ-2는 X<sup>R</sup>X′이다.' },
+      { kind:'tap', ids:Q5_SON_EVID, banner:'같은 근거로 보인자가 확정되는 여자를 선택하시오',
+        prompt:'👆 <b>아들</b>을 근거로 보인자임이 확정되는 여자가 한 명 더 있다. 그 사람을 선택하시오.',
+        ok:function(id){
+          return 'Ⅱ-<b>4</b>는 정상이지만 아들 <b>7</b>이 적록색맹이다. 7의 X′는 어머니에게서 온 것이므로 Ⅱ-4는 X<sup>R</sup>X′이다. ' +
+                 'Ⅱ-4는 부모(1·2)만 보아서는 확정되지 않고, <b>자녀에게서 거슬러 올라가야</b> 확정된다.';
+        },
+        hl:function(id){ return [4,7]; },
+        wrong:function(id){
+          var m = memberById(P4, id);
+          if (!m) return '해당 위치에 구성원이 없다.';
+          if (m.sex === 'M') return id + '는 <b>남자</b>이다. 남자는 X염색체가 하나뿐이므로 보인자가 될 수 없다.';
+          if (id === 2) return 'Ⅰ-2는 ②에서 이미 확정하였다. 아직 확정하지 않은 여자를 선택하시오.';
+          if (id === 6) return 'Ⅲ-6도 보인자이지만 근거가 다르다. 6에게는 자녀가 없으므로 아들을 근거로 삼을 수 없다.';
+          return '이 단계에서 찾는 것은 <b>적록색맹인 아들</b>을 둔 정상 여자이다.';
+        } },
+      { kind:'tap', ids:Q5_DAD_EVID, banner:'Ⅲ-6이 보인자라는 근거가 되는 구성원을 선택하시오',
+        prompt:'Ⅲ-6도 보인자이지만 6에게는 자녀가 없다. 👆 6이 보인자라는 <b>근거가 되는 구성원</b>을 선택하시오.',
+        ok:function(id){
+          return '아버지 <b>5</b>는 적록색맹(X′Y)이므로 딸에게 전달할 X염색체는 <b>X′ 하나뿐</b>이다. ' +
+                 '딸 6은 그 X′를 반드시 받으며, 6은 정상이므로 나머지 하나는 X<sup>R</sup>이다. 따라서 6은 X<sup>R</sup>X′이다.';
+        },
+        hl:function(id){ return [5,6]; },
+        wrong:function(id){
+          if (id === 4) return '어머니 4는 X<sup>R</sup>X′이므로 딸 6에게 두 X염색체 중 어느 것을 전달하였는지 확정되지 않는다. 근거는 다른 쪽 부모에게 있다.';
+          if (id === 7) return '7은 6의 형제이다. 형제자매는 서로의 유전자형을 확정하는 근거가 되지 못한다.';
+          if (id === 6) return '6 자신의 표현형은 「적록색맹이 아니다」까지만 알려 준다. 나머지 X염색체에 대한 근거는 <b>부모</b>에게서 찾는다.';
+          return '6의 유전자형을 확정하는 근거는 6의 <b>부모</b>에게 있다.';
+        },
+        rule:'<b>판별 규칙</b> — 적록색맹인 <b>아들</b>은 그 어머니가 X′를 가진다는 근거가 되고, ' +
+             '적록색맹인 <b>아버지</b>는 그 딸이 X′를 가진다는 근거가 된다. 아들은 어머니에게서만, 딸은 부모 양쪽에서 X염색체를 받기 때문이다.' }
+    ]
+  },
+
+  q6: {
+    stage:'stage4', box:'qbox_q6', card:'quiz_q6', intro:'qintro_q6',
+    labels:['① 결정적 단서','② 부모에 대한 확정','③ 유전자형 결정','④ 다음 세대 예측'],
+    intro_t:'ABO식 혈액형은 대립유전자가 세 가지(I<sup>A</sup>·I<sup>B</sup>·i)인 <b>복대립유전</b>이다. ' +
+            '이 유전자는 상염색체에 있으므로 남녀를 구분하지 않는다.',
+    steps:[
+      { kind:'tap', ids:Q6_EVIDENCE, banner:'Ⅰ세대 부모의 유전자형을 확정해 주는 자녀를 선택하시오',
+        prompt:'Ⅰ-1은 A형, Ⅰ-2는 B형이지만 표현형만으로는 두 사람의 유전자형이 확정되지 않는다. ' +
+               '👆 두 사람의 유전자형을 확정해 주는 <b>자녀</b>를 선택하시오.',
+        ok:function(id){
+          return 'Ⅱ-<b>3</b>은 <b>O형</b>이다. O형의 유전자형은 ii 하나뿐이므로, 3은 부모 양쪽에서 i를 하나씩 받은 것이다. ' +
+                 '자녀에게서 부모를 거슬러 확정하는 이 방향은 앞의 적록색맹에서 쓴 것과 같다.';
+        },
+        hl:function(id){ return [1,2,3]; },
+        wrong:function(id){
+          if (id === 4) return 'Ⅱ-4는 AB형이다. 아버지에게서 I<sup>A</sup>를, 어머니에게서 I<sup>B</sup>를 받았다는 뜻이며, 이는 부모의 표현형에서 이미 알 수 있다.';
+          if (id === 5) return 'Ⅱ-5는 Ⅰ세대의 자녀가 아니라 Ⅱ-4의 배우자이다.';
+          if (id === 6 || id === 7) return id + '는 Ⅲ세대이다. Ⅰ-1·Ⅰ-2의 <b>자녀</b> 중에서 선택하시오.';
+          return 'Ⅰ-1·Ⅰ-2의 자녀 중에서 선택하시오.';
+        } },
+      { kind:'pick',
+        prompt:'Ⅱ-3이 O형(ii)이라는 사실에서 Ⅰ-1과 Ⅰ-2에 대하여 확정되는 것은?',
+        wide:true,
+        choices:[
+          { t:'두 사람 모두 <b>i를 하나씩</b> 가진다', ok:true },
+          { t:'두 사람 중 <b>한 명만</b> i를 가진다',
+            fb:'옳지 않다. ii인 자녀는 i를 <b>두 개</b> 받아야 하므로 아버지와 어머니가 각각 하나씩 전달하였다.' },
+          { t:'두 사람 모두 <b>O형</b>이다',
+            fb:'옳지 않다. i는 I<sup>A</sup>·I<sup>B</sup>에 대하여 열성이므로, i를 하나 가지고 있어도 표현형은 A형 또는 B형이 된다.' }
+        ],
+        ok:'옳다. ii인 자녀는 부모 양쪽에서 i를 하나씩 받은 것이다.' },
+      { kind:'pick',
+        prompt:'Ⅰ-1(A형)과 Ⅰ-2(B형)의 유전자형은?',
+        wide:true,
+        choices:[
+          { t:'Ⅰ-1 = I<sup>A</sup>i · Ⅰ-2 = I<sup>B</sup>i', ok:true },
+          { t:'Ⅰ-1 = I<sup>A</sup>I<sup>A</sup> · Ⅰ-2 = I<sup>B</sup>I<sup>B</sup>',
+            fb:'옳지 않다. 이 경우 두 사람은 i를 전달할 수 없으므로 O형인 자녀 3이 태어날 수 없다.' },
+          { t:'Ⅰ-1 = I<sup>A</sup>i · Ⅰ-2 = I<sup>B</sup>I<sup>B</sup>',
+            fb:'옳지 않다. Ⅰ-2가 i를 갖지 않으면 자녀는 반드시 I<sup>B</sup>를 받으므로 O형이 될 수 없다.' }
+        ],
+        ok:'옳다. A형이면서 i를 가지므로 Ⅰ-1은 <b>I<sup>A</sup>i</b>, B형이면서 i를 가지므로 Ⅰ-2는 <b>I<sup>B</sup>i</b>이다. ' +
+           '딸 Ⅱ-4가 AB형(I<sup>A</sup>I<sup>B</sup>)인 것도 이와 어긋나지 않는다.' },
+      { kind:'pick',
+        prompt:'Ⅱ-4(AB형)와 Ⅱ-5(O형) 사이에서 태어나는 자녀의 혈액형으로 가능한 것은?',
+        wide:true,
+        choices:[
+          { t:'A형 또는 B형', ok:true },
+          { t:'AB형 또는 O형',
+            fb:'옳지 않다. AB형이 되려면 I<sup>A</sup>와 I<sup>B</sup>를 함께 받아야 하는데 Ⅱ-5(ii)는 i만 전달한다. ' +
+               'O형이 되려면 i를 두 개 받아야 하는데 Ⅱ-4(I<sup>A</sup>I<sup>B</sup>)는 i를 전달하지 않는다.' },
+          { t:'A형·B형·AB형·O형 모두',
+            fb:'옳지 않다. Ⅱ-5는 i만, Ⅱ-4는 I<sup>A</sup> 또는 I<sup>B</sup>만 전달하므로 자녀의 유전자형은 두 가지뿐이다.' }
+        ],
+        ok:'✅ Ⅱ-4는 I<sup>A</sup>I<sup>B</sup>, Ⅱ-5는 ii이므로 자녀는 <b>I<sup>A</sup>i(A형)</b> 또는 <b>I<sup>B</sup>i(B형)</b>이며 각각 1/2이다. ' +
+           '실제로 자녀 6은 B형, 7은 A형이다.',
+        rule:'<b>판별 규칙</b> — O형(ii)인 사람이 있으면 그 부모는 <b>양쪽 모두</b> i를 가진다. ' +
+             'AB형인 사람이 있으면 그 부모 중 한쪽은 I<sup>A</sup>를, 다른 쪽은 I<sup>B</sup>를 가진다.' }
+    ]
+  },
+
+  q7: {
+    stage:'stage4', box:'qbox_q7', card:'quiz_q7', intro:'qintro_q7',
+    labels:['① 두 형질 정리','② 혈액형 확률','③ 성별과 색맹 확률','④ 종합 확률'],
+    intro_t:'혈액형 유전자는 상염색체에, 적록색맹 유전자는 X염색체에 있다. ' +
+            '서로 다른 염색체에 있으므로 두 형질은 <b>독립적으로</b> 전달된다.',
+    steps:[
+      { kind:'read',
+        text:'앞의 두 문항에서 Ⅱ-4는 <b>I<sup>A</sup>I<sup>B</sup> · X<sup>R</sup>X′</b>, Ⅱ-5는 <b>ii · X′Y</b>로 확정되었다. ' +
+             '이 부부 사이에서 아이가 한 명 더 태어나는 경우를 생각한다.' },
+      { kind:'pick',
+        prompt:'이 아이가 <b>A형</b>일 확률은?',
+        choices:[
+          { t:'1/4', fb:'옳지 않다. Ⅱ-5(ii)가 전달하는 것은 i뿐이므로, 혈액형은 Ⅱ-4가 I<sup>A</sup>와 I<sup>B</sup> 중 무엇을 전달하는지로만 결정된다.' },
+          { t:'1/2', ok:true },
+          { t:'3/4', fb:'옳지 않다. 가능한 혈액형은 A형과 B형 두 가지뿐이고 두 경우의 확률은 같다.' }
+        ],
+        ok:'옳다. Ⅱ-4가 I<sup>A</sup>를 전달할 확률이 1/2이고 Ⅱ-5는 i만 전달하므로, 자녀가 I<sup>A</sup>i(A형)일 확률은 <b>1/2</b>이다.' },
+      { kind:'pick',
+        prompt:'이 아이가 <b>적록색맹인 남자</b>일 확률은?',
+        choices:[
+          { t:'1/8', fb:'옳지 않다. 아버지 Ⅱ-5가 아들에게 전달하는 것은 Y염색체이므로, 아들의 색맹 여부는 어머니에게서 받는 X염색체 하나로만 결정된다.' },
+          { t:'1/4', ok:true },
+          { t:'1/2', fb:'옳지 않다. 남자로 태어날 확률 1/2과, 그 남자가 어머니에게서 X′를 받을 확률 1/2을 <b>함께</b> 고려한다.' }
+        ],
+        ok:'옳다. 아들일 확률이 1/2이고, 아들이 어머니 Ⅱ-4(X<sup>R</sup>X′)에게서 X′를 받을 확률이 1/2이므로 <b>1/4</b>이다.' },
+      { kind:'pick',
+        prompt:'이 아이가 <b>A형이면서 적록색맹인 남자</b>일 확률은?',
+        choices:[
+          { t:'1/16', fb:'옳지 않다. 곱하는 방향은 옳으나 1/2 × 1/4의 값을 다시 확인한다.' },
+          { t:'1/8', ok:true },
+          { t:'1/4', fb:'옳지 않다. 두 형질은 독립적으로 전달되므로 각각의 확률을 <b>곱해야</b> 한다. 1/4은 적록색맹인 남자일 확률만 따진 값이다.' }
+        ],
+        ok:'✅ 1/2 × 1/4 = <b>1/8</b>이다. 상염색체 형질과 성염색체 형질은 서로 영향을 주지 않으므로 두 확률을 곱한다.',
+        rule:'<b>계산 규칙</b> — 서로 다른 염색체에 있는 두 형질은 독립적으로 전달된다. ' +
+             '두 조건을 함께 만족할 확률은 각 확률의 <b>곱</b>이며, 성별 조건은 성염색체 형질 쪽에 포함하여 계산한다.'  }
+    ]
   }
 };
-var QORDER = { stage1:['q1','q2'], stage2:['qp'], stage3:['q3','q4'] };
+var QORDER = { stage1:['q1','q2'], stage2:['qp'], stage3:['q3','q4'], stage4:['q5','q6','q7'] };
 
 /* ── 상태 ── */
 var state = null;
@@ -1085,7 +1340,7 @@ function buildRelations(data){
   });
   return rel;
 }
-var REL1 = buildRelations(P1), REL2 = buildRelations(P2), REL3 = buildRelations(P3);
+var REL1 = buildRelations(P1), REL2 = buildRelations(P2), REL3 = buildRelations(P3), REL4 = buildRelations(P4);
 
 function genLabel(data, m){
   for (var i=0;i<data.gens.length;i++) if (data.gens[i].y === m.y) return data.gens[i].lab;
@@ -1096,7 +1351,9 @@ var STAGE = {
            restText:'가계도에서 구성원을 선택하면 그 구성원의 가족 관계가 표시된다.' },
   stage2:{ data:P2, rel:REL2, affName:'적록색맹', whoId:null,   taskId:null, restText:'' },
   stage3:{ data:P3, rel:REL3, affName:'형질 (가)', whoId:'who3', taskId:'task3',
-           restText:'구성원을 선택하면 그 구성원의 가족 관계가 표시된다.' }
+           restText:'구성원을 선택하면 그 구성원의 가족 관계가 표시된다.' },
+  stage4:{ data:P4, rel:REL4, affName:'적록색맹', whoId:'who4', taskId:'task4',
+           restText:'구성원을 선택하면 그 구성원의 혈액형과 가족 관계가 표시된다.' }
 };
 /* 한 사람의 '사실'만 뽑는다 — 유전자형·우열 판정은 절대 넣지 않는다 */
 function describeMember(stageId, id){
@@ -1107,6 +1364,7 @@ function describeMember(stageId, id){
     id:id, gen:genLabel(S.data, m),
     sex:m.sex, sexKo:(m.sex === 'M' ? '남자' : '여자'),
     aff:m.aff, affName:S.affName, stateKo:(m.aff ? S.affName : '정상'),
+    bt:(m.bt || null),                       // ABO식 혈액형 = 표현형(관찰 사실)
     parents:r.parents.slice(), children:r.children.slice(),
     spouses:r.spouses.slice(), sibs:r.sibs.slice()
   };
@@ -1241,7 +1499,7 @@ function pedBuildAssist(stageId, data, onTap){
     b.id = 'pedchip_' + stageId + '_' + m.id;
     b.innerHTML = (stageId === 'stage2')
       ? (genLabel(data, m) + '-' + m.id + '<span class="cg">?</span>')
-      : String(m.id);
+      : (m.bt ? (m.id + '<span class="cg">' + m.bt + '형</span>') : String(m.id));
     if (onTap) b.onclick = function(){ onTap(m.id); };
     row.appendChild(b);
   });
@@ -1406,13 +1664,14 @@ function renderPedigree(stageId, data, onTap){
     d.style.top = (m.y - SH/2) + 'px';
     var fill = m.aff ? ('var(--' + data.aff + ')') : '#fff';
     var edge = m.aff ? ('var(--' + data.aff + '-line)') : '#9AA0A8';
-    d.innerHTML = '<div class="shape" style="background:' + fill + '; border-color:' + edge + ';"></div>' +
+    d.innerHTML = '<div class="shape" style="background:' + fill + '; border-color:' + edge + ';">' +
+                    (m.bt ? '<span class="bt">' + m.bt + '</span>' : '') + '</div>' +
                   '<div class="num">' + m.id + '</div>' +
                   '<div class="geno" id="' + stageId + '_g' + m.id + '">&nbsp;</div>';
     d.setAttribute('tabindex','0');
     d.setAttribute('role','button');
     d.setAttribute('aria-label', genLabel(data, m) + '-' + m.id + ' ' +
-      (m.sex === 'M' ? '남자' : '여자') + ' ' + (m.aff ? '형질 발현' : '정상'));
+      (m.sex === 'M' ? '남자' : '여자') + ' ' + (m.bt ? m.bt + '형 ' : '') + (m.aff ? '형질 발현' : '정상'));
     if (onTap) {
       d.onclick = function(){ onTap(m.id); };
       d.onkeydown = function(ev){
@@ -1486,6 +1745,7 @@ function memberTag(stageId, oid){
   var S = STAGE[stageId], o = memberById(S.data, oid);
   if (!o) return String(oid);
   return '<b>' + oid + '</b>' + (o.sex === 'M' ? '♂' : '♀') +
+         (o.bt ? '·' + o.bt + '형' : '') +
          (o.aff ? '<span style="color:var(--pink);">·' + S.affName + '</span>' : '·정상');
 }
 function relRow(stageId, key, list, none){
@@ -1538,6 +1798,7 @@ function showWho(stageId, id){
   box.className = 'ped-who';
   box.innerHTML =
     '<div class="wtitle">' + d.gen + '-' + d.id + ' · ' + d.sexKo +
+      (d.bt ? '<span class="badge norm">' + d.bt + '형</span>' : '') +
       '<span class="badge ' + (d.aff ? 'aff' : 'norm') + '">' + d.stateKo + '</span></div>' +
     '<div class="wrel">' + whoRelHTML(stageId, id) + '</div>' +
     '<div class="whint" id="' + S.whoId + '_hint"></div>';
@@ -1628,6 +1889,8 @@ function onQuestComplete(qid){
   if (d.legacy) { state[d.legacy] = d.pick; state[d.legacy + 'ev'] = true; }
   if (qid === 'q1') { var c2 = document.getElementById('quiz_q2'); if (c2) c2.style.display = 'block'; renderQuest('q2'); }
   if (qid === 'q3') { var c4 = document.getElementById('quiz_q4'); if (c4) c4.style.display = 'block'; renderQuest('q4'); }
+  if (qid === 'q5') { var c6 = document.getElementById('quiz_q6'); if (c6) c6.style.display = 'block'; renderQuest('q6'); }
+  if (qid === 'q6') { var c7 = document.getElementById('quiz_q7'); if (c7) c7.style.display = 'block'; renderQuest('q7'); }
 }
 
 /* ── 렌더 ── */
@@ -1654,7 +1917,7 @@ function stepEl(qid, i){
   var done = (q.s > i);
   var el = document.createElement('div');
   el.className = 'qstep' + (done ? ' done' : ' cur');
-  var html = '<span class="slabel">' + STEP_LABEL[i] + '</span>';
+  var html = '<span class="slabel">' + ((d.labels || STEP_LABEL)[i] || '') + '</span>';
 
   if (st.kind === 'read') {
     html += '<div class="sprompt">' + st.text + '</div>';
@@ -1822,19 +2085,22 @@ function roundBadgeText(){
   return '유전자형 ' + roundsPassed() + '/' + ROUNDS.length + '라운드';
 }
 function challengeDone(){ return !!(state.q3ev && state.q4ev); }
+function practiceDone(){ return qDone('q5') && qDone('q6') && qDone('q7'); }
 function updateProgress(){
   var extra = roundBadgeText();
   document.getElementById('progress').textContent =
     '진행 ' + stepDone() + ' / 4' + (extra ? ' · ' + extra : '');
   var cb = document.getElementById('chalBadge');
   if (cb) cb.style.display = challengeDone() ? 'inline-block' : 'none';
+  var pb = document.getElementById('practiceBadge');
+  if (pb) pb.style.display = practiceDone() ? 'inline-block' : 'none';
   renderFirstLine();
 }
 function renderFirstLine(){
   var el = document.getElementById('firstLine'); if (!el) return;
   var f = firstSummary();
   var dots = '';
-  ['q1','q2','qp','q3','q4'].forEach(function(qid){
+  ['q1','q2','qp','q3','q4','q5','q6','q7'].forEach(function(qid){
     QDEF[qid].steps.forEach(function(st, i){
       if (st.kind !== 'pick' && st.kind !== 'tap') return;
       var v = (state.first || {})[qid + ':' + i];
@@ -1844,7 +2110,8 @@ function renderFirstLine(){
   });
   el.innerHTML = '<b>첫 시도에 맞힌 단계 ' + f.got + ' / ' + f.total + '</b> ' +
     '<span class="dots" style="color:var(--sub);">' + dots + '</span>' +
-    '<div class="note" style="margin-top:2px;">● 첫 시도 정답 · ○ 첫 시도 오답 · · 미실시 (문항 순서: 1 · 2 · 4 · 도전A · 도전B)</div>';
+    '<div class="note" style="margin-top:2px;">● 첫 시도 정답 · ○ 첫 시도 오답 · · 미실시 ' +
+    '(문항 순서: 1 · 2 · 4 · 도전A · 도전B · 연습1 · 연습2 · 연습3)</div>';
 }
 
 /* ════════════════ 자료1 · 도전 탭 ════════════════ */
@@ -1859,6 +2126,7 @@ function tapStage(stageId, id){
 }
 function tapP1(id){ tapStage('stage1', id); }
 function tapP3(id){ tapStage('stage3', id); }
+function tapP4(id){ tapStage('stage4', id); }
 
 /* ════════════════ 자료2: 라운드 · 유전자형 · 경로 ════════════════ */
 var sheetTarget = null;
@@ -2194,7 +2462,8 @@ var ANS_LABEL = {
   ans1Btn:['모범답안 보기','모범답안 닫기'],
   ans2Btn:['모범답안 보기','모범답안 닫기'],
   ans3Btn:['지금까지 확정한 표 보기','표 닫기'],
-  ans4Btn:['모범답안 보기','모범답안 닫기']
+  ans4Btn:['모범답안 보기','모범답안 닫기'],
+  ansPBtn:['모범답안 보기','모범답안 닫기']
 };
 var ANS_TA = { ans1Btn:{id:'ta1',min:15}, ans2Btn:{id:'ta2',min:15}, ans4Btn:{id:'ta4',min:5} };
 
@@ -2204,7 +2473,8 @@ function ansGate(key){
   var doneMap = {
     ans1Btn:[!!state.q1ev, '문항 1을 ④단계까지 완료해야 열람할 수 있다'],
     ans2Btn:[!!state.q2ev, '문항 2를 ④단계까지 완료해야 열람할 수 있다'],
-    ans4Btn:[!!state.pathDone, '문항 4(경로 추적)를 완료해야 열람할 수 있다']
+    ans4Btn:[!!state.pathDone, '문항 4(경로 추적)를 완료해야 열람할 수 있다'],
+    ansPBtn:[practiceDone(), '⑤ 연습 문항 1~3을 모두 완료해야 열람할 수 있다']
   };
   var d = doneMap[key];
   if (!d) return { open:true, reason:'' };
@@ -2223,6 +2493,7 @@ function toggleAns(btn){
   var g = ansGate(key);
   if (!g.open) { btn.textContent = '🔒 ' + g.reason; return; }
   if (key === 'ans3Btn') renderAns3();
+  if (key === 'ansPBtn') renderAnsP();
   var ans = btn.parentElement ? btn.parentElement.querySelector('.ans') : null;
   if (!ans) return;
   var open = ans.style.display === 'block';
@@ -2231,7 +2502,7 @@ function toggleAns(btn){
   btn.textContent = open ? L[0] : L[1];
 }
 function refreshAnsGates(){
-  ['ans1Btn','ans2Btn','ans3Btn','ans4Btn'].forEach(function(k){
+  ['ans1Btn','ans2Btn','ans3Btn','ans4Btn','ansPBtn'].forEach(function(k){
     var b = document.getElementById(k);
     if (!b) return;
     var g = ansGate(k);
@@ -2242,6 +2513,31 @@ function refreshAnsGates(){
     b.textContent = g.open ? ((ans && ans.style.display === 'block') ? L[1] : L[0]) : ('🔒 ' + g.reason);
   });
   renderAns3();
+  renderAnsP();
+}
+
+/* ⑤ 연습 정리표 — 두 형질을 나란히 놓아 「어느 규칙으로 확정했는가」를 대조한다 */
+function renderAnsP(){
+  var box = document.getElementById('ansTableP');
+  if (!box) return;
+  if (!(state.teacherUnlock || practiceDone())) {
+    box.innerHTML = '<p class="note">🔒 ⑤의 연습 문항 1~3을 모두 완료하면 표가 열린다.</p>';
+    return;
+  }
+  var ids = P4.members.map(function(m){ return m.id; });
+  var row = function(head, cell){
+    return '<tr><th>' + head + '</th>' + ids.map(function(id){ return '<td>' + cell(id) + '</td>'; }).join('') + '</tr>';
+  };
+  box.innerHTML = '<table class="gtable">' +
+    row('구성원', function(id){ return genLabel(P4, memberById(P4, id)) + '-' + id; }) +
+    row('혈액형', function(id){ return memberById(P4, id).bt + '형'; }) +
+    row('혈액형 유전자형', function(id){ return BT_LABEL[P4_BT_KEY[id]]; }) +
+    row('색맹 유전자형', function(id){ return GENO_LABEL[P4_CB_KEY[id]]; }) +
+    '</table>' +
+    '<p style="margin-top:6px;"><b>혈액형</b>: O형인 3(ii)이 부모 1·2가 i를 하나씩 가진다는 근거가 되어 1 = I<sup>A</sup>i, 2 = I<sup>B</sup>i로 확정된다. ' +
+    '4는 AB형이므로 I<sup>A</sup>I<sup>B</sup>, 5는 O형이므로 ii이며, 6·7은 아버지 5(ii)에게서 i를 받으므로 각각 I<sup>B</sup>i·I<sup>A</sup>i이다.<br>' +
+    '<b>적록색맹</b>: 남자 1·3·5·7은 표현형이 곧 유전자형이다. 여자 2·4는 <b>적록색맹인 아들</b>(3·7)을 근거로, ' +
+    '6은 <b>적록색맹인 아버지</b>(5)를 근거로 보인자 X<sup>R</sup>X′로 확정된다. 이 가계도에서는 7명 모두 확정되며 「확정 불가」인 사람은 없다.</p>';
 }
 /* 정리 3 = 정답표가 아니라 '내가 라운드로 확정한 표' */
 function renderAns3(){
@@ -2292,10 +2588,12 @@ function resetAll(){
 /* ════════════════ 복원 ════════════════ */
 function restoreUI(){
   // 문항 4단계
-  ['q1','q2','q3','q4','qp'].forEach(function(qid){ qstate(qid); });
+  ['q1','q2','q3','q4','qp','q5','q6','q7'].forEach(function(qid){ qstate(qid); });
   if (qDone('q1')) { var c2 = document.getElementById('quiz_q2'); if (c2) c2.style.display = 'block'; }
   if (qDone('q3')) { var c4 = document.getElementById('quiz_q4'); if (c4) c4.style.display = 'block'; }
-  ['q1','q2','q3','q4'].forEach(function(qid){
+  if (qDone('q5')) { var c6 = document.getElementById('quiz_q6'); if (c6) c6.style.display = 'block'; }
+  if (qDone('q6')) { var c7 = document.getElementById('quiz_q7'); if (c7) c7.style.display = 'block'; }
+  ['q1','q2','q3','q4','q5','q6','q7'].forEach(function(qid){
     renderQuest(qid);
     var q = qstate(qid), d = QDEF[qid];
     // 완료된 문항의 근거 강조를 되살린다
@@ -2307,7 +2605,7 @@ function restoreUI(){
     }
     q.obs.forEach(function(id){ markSeen(d.stage, id); });
   });
-  ['stage1','stage3'].forEach(function(sid){ resetWho(sid); syncBanner(sid); });
+  ['stage1','stage3','stage4'].forEach(function(sid){ resetWho(sid); syncBanner(sid); });
 
   // 자료2
   reconcileRounds();
@@ -2341,8 +2639,9 @@ function init(){
   renderPedigree('stage1', P1, tapP1);
   renderPedigree('stage2', P2, tapP2);
   renderPedigree('stage3', P3, tapP3);
+  renderPedigree('stage4', P4, tapP4);
   pedBindGlobal();
-  ['stage1','stage2','stage3'].forEach(function(id){ pedBindPan(id); });
+  ['stage1','stage2','stage3','stage4'].forEach(function(id){ pedBindPan(id); });
   pedFitAll();
   var saved = loadState();
   state = saved ? Object.assign(freshState(), saved) : freshState();
